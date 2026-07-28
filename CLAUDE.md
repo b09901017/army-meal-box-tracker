@@ -73,6 +73,17 @@ slot        = packedInBox % 6
 
 `busy` 旗標會在浮層播放期間擋掉 `+1`，避免連按疊在一起。
 
+## 配色與主題
+
+`css/style.css` 開頭的 token 區有三組：`:root`（淺色）、媒體查詢版的 `[data-theme="auto"]`、
+手動指定的 `[data-theme="dark"]`。**後兩組內容必須一模一樣**，改深色配色時兩邊都要動
+（CSS 沒有 mixin，只能重複寫）。
+
+深色不是把淺色調暗而已：橘（`--accent`）與綠（`--veg`）都要提亮才有對比，
+底色用帶暖調的深墨綠灰而不是純灰。箱子格子的填色另外用
+`--slot-fill` / `--slot-fill-ink` / `--slot-fill-ring` 定義，
+**不要用 `color-mix(accent, surface)`** —— 亮橘混深底會變成濁掉的咖啡色。
+
 ## 容易踩到的坑
 
 - **`[hidden]` 會被 `display` 蓋掉。** `.sheet`、`.counter-bar`、`.veg-banner` 都有自己的 `display`，所以 `css/style.css` 開頭有一條 `[hidden] { display: none !important }`。拿掉的話設定面板會隱形但擋住整個畫面的點擊。
@@ -80,6 +91,8 @@ slot        = packedInBox % 6
 - **設定畫面的數字輸入不能觸發整表重繪**，否則游標會跳掉。`setPlan(..., quiet=true)` 只存檔不 emit，由 `app.js` 手動更新那一列的小計與總覽。
 - **`ui.js` 的 `keepBoxInView()`** 只在「換連隊或換箱」時捲動，而且箱子已經完整可見時不動作。同一箱內按 `+1` 不捲，否則畫面會一直跳。
 - **AudioContext 要等使用者互動才能 resume**，所以 `Effects.unlock()` 綁在第一次 pointerdown 與各個按鈕上。
+- **`unitStats().boxesSealed` 在打完時要等於 `boxesNeeded`**，不能用 `floor(packed/24)`。
+  否則 64 個打完會顯示「2/3 箱」——最後那個沒裝滿的箱子其實已經封起來了。
 
 ## 驗證
 
