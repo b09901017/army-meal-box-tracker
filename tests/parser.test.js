@@ -123,6 +123,29 @@ test('半形冒號與空白', function () {
   assert.deepStrictEqual(m.lunch, { meat: 12, veg: 0 });
 });
 
+test('午餐寫「午」也能解析', function () {
+  var x = App.Parser.parse('火\n早：10午：30晚：20');
+  var m = byUnit(x, 'huo');
+  assert.deepStrictEqual(m.breakfast, { meat: 10, veg: 0 });
+  assert.deepStrictEqual(m.lunch, { meat: 30, veg: 0 });
+  assert.deepStrictEqual(m.dinner, { meat: 20, veg: 0 });
+});
+
+test('午餐寫「中午」不會重複計算', function () {
+  var x = App.Parser.parse('火\n中午：30');
+  assert.deepStrictEqual(byUnit(x, 'huo').lunch, { meat: 30, veg: 0 });
+});
+
+test('「下午」也吃得下', function () {
+  var x = App.Parser.parse('火\n下午：25');
+  assert.deepStrictEqual(byUnit(x, 'huo').lunch, { meat: 25, veg: 0 });
+});
+
+test('午餐帶素食', function () {
+  var x = App.Parser.parse('戰\n午：15+2素');
+  assert.deepStrictEqual(byUnit(x, 'zhan').lunch, { meat: 15, veg: 2 });
+});
+
 test('沒看過的單位會被保留成自訂單位', function () {
   var x = App.Parser.parse('兵器連\n早：5晚：7');
   assert.strictEqual(x.entries.length, 1);

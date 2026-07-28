@@ -7,7 +7,10 @@ window.App = window.App || {};
 App.Parser = (function () {
   'use strict';
 
-  var MEAL_MARK = { '早': 'breakfast', '中': 'lunch', '晚': 'dinner' };
+  // 午餐「中」「午」都認。寫成「中午：15」時兩個標記都會命中，
+  // 但同一餐的數字是相加的（「中」那段沒有數字＝0），所以結果仍是 15。
+  var MEAL_MARK = { '早': 'breakfast', '中': 'lunch', '午': 'lunch', '晚': 'dinner' };
+  var MEAL_RE = /[早中午晚]/;
 
   /* 全形轉半形、注音「ㄧ」轉「一」、去空白與雜點符號。
      全形轉半形順便把「：」→「:」、「＋」→「+」、「（）」→「()」 */
@@ -23,10 +26,10 @@ App.Parser = (function () {
   }
 
   /* 這一行看起來像不像「單位標題」？
-     條件：正規化後非空、不含早/中/晚、不含數字、長度不超過 10 */
+     條件：正規化後非空、不含餐別字、不含數字、長度不超過 10 */
   function looksLikeHeader(norm) {
     if (!norm) return false;
-    if (/[早中晚]/.test(norm)) return false;
+    if (MEAL_RE.test(norm)) return false;
     if (/\d/.test(norm)) return false;
     return norm.length <= 10;
   }
@@ -141,7 +144,7 @@ App.Parser = (function () {
         continue;
       }
 
-      if (/[早中晚]/.test(norm)) {
+      if (MEAL_RE.test(norm)) {
         if (!current) {
           // 出現數字但還沒看到單位名稱 → 建一個暫時單位，讓使用者自己改名
           current = { unitId: 'custom' + (++customSeq), name: '未命名單位', isCustom: true, meals: {} };

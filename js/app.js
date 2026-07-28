@@ -163,10 +163,17 @@
         UI.toast('解析不到便當數，請手動輸入');
         return;
       }
-      S.applyEntries(result.entries, result.dateLabel);
-      UI.showWarnings(result.warnings);
+      var applied = S.applyEntries(result.entries, result.dateLabel);
+      var warnings = result.warnings.slice();
+      if (applied.dateChanged) {
+        warnings.unshift('偵測到換日（' + S.get().dateLabel + '），已把先前打好的 ' +
+          applied.clearedCount + ' 個便當進度歸零，重新開始。');
+      }
+      UI.showWarnings(warnings);
       var day = S.dayStats();
-      UI.toast('解析完成：' + day.total + ' 個便當 · ' + day.boxes + ' 箱', 2400);
+      UI.toast(applied.dateChanged
+        ? '換日，進度已歸零 · ' + day.total + ' 個便當 · ' + day.boxes + ' 箱'
+        : '解析完成：' + day.total + ' 個便當 · ' + day.boxes + ' 箱', 2800);
     });
 
     $('#btn-add-unit').addEventListener('click', function () {
