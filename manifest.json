@@ -1,0 +1,15 @@
+{
+  "name": "打飯班便當助手",
+  "short_name": "打飯助手",
+  "description": "部隊打飯班的便當分箱計數工具：一箱 4 層 × 6 個，自動提醒換層、換箱、換連隊。",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3EFE4",
+  "theme_color": "#3E5641",
+  "lang": "zh-Hant",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
