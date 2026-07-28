@@ -338,6 +338,12 @@
     window.addEventListener('scroll', syncTopbar, { passive: true });
     syncTopbar();
 
+    // 主題設為「跟隨系統」時，系統切換深淺色也要同步狀態列顏色
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var onScheme = function () { UI.syncThemeColor(); };
+    if (mq.addEventListener) mq.addEventListener('change', onScheme);
+    else if (mq.addListener) mq.addListener(onScheme);
+
     UI.setScreen(S.get().configured && S.dayStats().total > 0 ? 'work' : 'setup');
 
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

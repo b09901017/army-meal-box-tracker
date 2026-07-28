@@ -93,6 +93,11 @@ slot        = packedInBox % 6
 - **AudioContext 要等使用者互動才能 resume**，所以 `Effects.unlock()` 綁在第一次 pointerdown 與各個按鈕上。
 - **頂列是毛玻璃，左右要用負 margin 撐滿 app 寬度**，否則模糊會在左右內距處斷掉，看得出接縫。
   另外它的高度會隨 `env(safe-area-inset-top)` 變動，所以 `keepBoxInView()` 是量 `offsetHeight` 而不是寫死。
+- **不要用 manifest 的 `display: fullscreen`。** Android 在 fullscreen 下會把瀏海／邊海區
+  letterbox 成黑色，那塊在網頁視窗之外，CSS 完全改不到，看起來就是頂端多一條黑帶。
+  正確做法是 `standalone` + 把 `theme-color` 塗成跟畫面最上緣同色（`--bg-grain`），
+  時間電量就像浮在 App 背景上。`ui.js` 的 `syncThemeColor()` 負責跟著主題切換同步。
+- **背景要畫在 `html` 上**，不能只靠 `body` 背景往上傳遞，否則安全區那塊可能不會被塗到。
 - **`unitStats().boxesSealed` 在打完時要等於 `boxesNeeded`**，不能用 `floor(packed/24)`。
   否則 64 個打完會顯示「2/3 箱」——最後那個沒裝滿的箱子其實已經封起來了。
 
