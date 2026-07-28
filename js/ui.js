@@ -162,9 +162,13 @@ App.UI = (function () {
     hero.innerHTML =
       '<div class="hero-label">' + meal.icon + ' ' + meal.label + (s.done ? ' · 全部完成！' : ' · 還差') + '</div>' +
       '<div class="hero-num">' + (s.done ? '✓' : s.remaining) + (s.done ? '' : '<small>個</small>') + '</div>' +
-      '<div class="hero-sub">已打 ' + s.packed + ' / ' + s.total + ' 個 · 本餐共 ' + s.boxes + ' 箱' +
-        '<br><span class="dim">全日還差 ' + day.remaining + ' / ' + day.total + ' 個</span></div>' +
-      '<div class="hero-bar"><i style="width:' + Math.round(s.ratio * 100) + '%"></i></div>';
+      '<div class="hero-bar"><i style="width:' + Math.round(s.ratio * 100) + '%"></i></div>' +
+      '<div class="hero-stats">' +
+        '<div class="hero-stat"><b>' + s.packed + '<i>/' + s.total + '</i></b><span>便當</span></div>' +
+        '<div class="hero-stat"><b>' + s.boxesSealed + '<i>/' + s.boxes + '</i></b><span>箱數</span></div>' +
+        '<div class="hero-stat is-veg"><b>' + s.veg + '</b><span>🥬 素食</span></div>' +
+      '</div>' +
+      '<div class="hero-foot">葷食 ' + s.meat + ' 個 · 素食 ' + s.veg + ' 個　｜　全日還差 ' + day.remaining + ' / ' + day.total + ' 個</div>';
   }
 
   function renderChips() {
@@ -172,9 +176,19 @@ App.UI = (function () {
     var units = S.unitsInMeal(st.activeMeal);
     $('#unit-chips').innerHTML = units.map(function (u) {
       var s = S.unitStats(st.activeMeal, u.id);
+      // 需求量拆成「葷+素」，例如 64 個 = 63+1
+      var breakdown = s.veg ? s.meat + '+' + s.veg + '素' : s.total + ' 個';
       return '<button type="button" class="chip' + (s.done ? ' is-done' : '') + '" role="tab" ' +
         'data-unit="' + u.id + '" aria-selected="' + (st.activeUnitId === u.id) + '">' +
-        esc(u.name) + '<span class="chip-count">' + s.packed + '/' + s.total + '</span></button>';
+          '<span class="chip-top">' +
+            '<span class="chip-name">' + esc(u.name) + (s.done ? ' ✓' : '') + '</span>' +
+            '<span class="chip-count">' + s.packed + '<i>/' + s.total + '</i></span>' +
+          '</span>' +
+          '<span class="chip-sub">' +
+            '<span class="chip-tag' + (s.veg ? ' has-veg' : '') + '">' + breakdown + '</span>' +
+            '<span class="chip-tag">📦 ' + s.boxesSealed + '/' + s.boxesNeeded + ' 箱</span>' +
+          '</span>' +
+        '</button>';
     }).join('') || '<p class="hint">這一餐沒有單位要打便當。</p>';
   }
 
@@ -227,11 +241,11 @@ App.UI = (function () {
     card.innerHTML =
       '<div class="box-head">' +
         '<div><div class="box-unit">' + esc(unitName(st.activeUnitId)) + (s.done ? ' ✅' : '') + '</div>' +
-        '<div class="box-sub">需求 ' + s.total + ' 個' + (s.veg ? '（含素食 ' + s.veg + '）' : '') +
-          ' · 還差 ' + s.remaining + ' 個</div></div>' +
+        '<div class="box-sub">需求 ' + s.total + ' 個' + (s.veg ? '（葷 ' + s.meat + ' + 素 ' + s.veg + '）' : '') + '</div>' +
+        '<div class="box-sub">已打 ' + boxPhrase(s.packed) + '</div></div>' +
         '<div class="box-meta">第 <b>' + (s.boxIndex + 1) + '</b> / ' + s.boxesNeeded + ' 箱' +
           '<br>本箱 ' + s.packedInBox + ' / ' + s.boxCapacity + ' 個' +
-          '<br>已打 ' + boxPhrase(s.packed) + '</div>' +
+          '<br>' + (s.done ? '已完成 ✓' : '還差 ' + s.remaining + ' 個') + '</div>' +
       '</div>' +
       '<div class="box-frame' + (boxFull ? ' is-full' : '') + '">' + layers + '</div>' +
       (s.boxCapacity < App.Const.PER_BOX

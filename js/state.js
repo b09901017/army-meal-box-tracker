@@ -196,7 +196,8 @@ App.State = (function () {
       packed: packed,
       remaining: Math.max(0, p.total - packed),
       boxesNeeded: boxesNeeded(p.total),
-      boxesSealed: Math.floor(packed / PER_BOX),
+      // 打完時最後一箱就算沒滿也已經封箱，不能用 floor(packed/24)
+      boxesSealed: done ? boxesNeeded(p.total) : Math.floor(packed / PER_BOX),
       boxIndex: boxIndex,          // 0-based，目前正在裝的箱子
       packedInBox: packedInBox,    // 這一箱已經放幾個
       boxCapacity: Math.max(0, capacity),
@@ -215,21 +216,27 @@ App.State = (function () {
   }
 
   function mealStats(mealId) {
-    var total = 0, packed = 0, boxes = 0, doneUnits = 0;
+    var total = 0, packed = 0, boxes = 0, sealed = 0, meat = 0, veg = 0, doneUnits = 0;
     var units = unitsInMeal(mealId);
     units.forEach(function (u) {
       var s = unitStats(mealId, u.id);
       total += s.total;
       packed += s.packed;
       boxes += s.boxesNeeded;
+      sealed += s.boxesSealed;
+      meat += s.meat;
+      veg += s.veg;
       if (s.done) doneUnits++;
     });
     return {
       mealId: mealId,
       total: total,
+      meat: meat,
+      veg: veg,
       packed: packed,
       remaining: total - packed,
       boxes: boxes,
+      boxesSealed: sealed,
       unitCount: units.length,
       doneUnits: doneUnits,
       done: total > 0 && packed >= total,
@@ -238,12 +245,13 @@ App.State = (function () {
   }
 
   function dayStats() {
-    var total = 0, packed = 0, boxes = 0;
+    var total = 0, packed = 0, boxes = 0, sealed = 0, veg = 0;
     App.Meals.forEach(function (m) {
       var s = mealStats(m.id);
-      total += s.total; packed += s.packed; boxes += s.boxes;
+      total += s.total; packed += s.packed; boxes += s.boxes; sealed += s.boxesSealed; veg += s.veg;
     });
     return { total: total, packed: packed, remaining: total - packed, boxes: boxes,
+             boxesSealed: sealed, veg: veg,
              ratio: total > 0 ? packed / total : 0, done: total > 0 && packed >= total };
   }
 
