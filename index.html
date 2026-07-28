@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>打飯班便當助手</title>
+<title>飯飯之輩</title>
 <meta name="description" content="部隊打飯班的便當分箱計數工具：一箱 4 層 × 6 個，自動提醒換層、換箱、換連隊。">
 <meta name="theme-color" content="#3E5641">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<!-- black-translucent：iOS 加到主畫面後，網頁內容會延伸到狀態列底下，看起來更沉浸。
+     搭配 CSS 的 env(safe-area-inset-top) 才不會被時間跟電量蓋住。 -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="打飯助手">
+<meta name="apple-mobile-web-app-title" content="飯飯之輩">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍱</text></svg>">
 <link rel="stylesheet" href="css/style.css">
@@ -40,7 +42,7 @@
     <div class="brand">
       <span class="brand-icon" aria-hidden="true">🍱</span>
       <div class="brand-text">
-        <h1>打飯班便當助手</h1>
+        <h1>飯飯之輩</h1>
         <p id="date-label" class="brand-sub">還沒設定便當數</p>
       </div>
     </div>

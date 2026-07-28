@@ -39,6 +39,7 @@
   --shadow-lg: 0 8px 40px -12px rgba(34,38,31,.35);
 
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
   color-scheme: light;
 }
 
@@ -141,13 +142,27 @@ p { margin: 0; }
 .hero-num, .stat-num, .mini-num, .tabnum { font-variant-numeric: tabular-nums; }
 
 /* ---------- 頂列 ---------- */
+/* 頂列：在最上面時完全透明融進背景，一往下捲就變成毛玻璃。
+   左右用負 margin 撐滿整個 app 寬度，模糊才不會在邊緣斷掉。
+   padding-top 加上 safe-area，iOS 沉浸模式下標題才不會被狀態列蓋住。 */
 .topbar {
   position: sticky; top: 0; z-index: 30;
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 2px;
-  /* 實色背景：捲動時底下的內容不會透出來糊成一片 */
-  background: var(--bg);
-  box-shadow: 0 10px 14px -12px rgba(0, 0, 0, .5);
+  margin: 0 -16px;
+  padding: calc(10px + var(--safe-t)) 18px 10px;
+  background: transparent;
+  transition: background .28s ease, box-shadow .28s ease, -webkit-backdrop-filter .28s ease, backdrop-filter .28s ease;
+}
+.topbar.is-stuck {
+  background: color-mix(in srgb, var(--bg) 68%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--border) 75%, transparent),
+              0 10px 22px -18px rgba(0, 0, 0, .7);
+}
+/* 不支援 backdrop-filter 的瀏覽器退回實色，至少不會糊成一片 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar.is-stuck { background: var(--bg); }
 }
 .brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .brand-icon { font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.18)); }
@@ -608,6 +623,7 @@ body.on-work .toast-root { bottom: calc(112px + var(--safe-b)); }
 /* ---------- 8) 響應式：平板 / 桌機 ---------- */
 @media (min-width: 760px) {
   .app { max-width: 760px; padding: 0 24px 24px; }
+  .topbar { margin: 0 -24px; padding-left: 26px; padding-right: 26px; }
   .brand h1 { font-size: 19px; }
   .hero { padding: 16px 20px 18px; }
   .hero-label, .hero-sub { font-size: 13px; }

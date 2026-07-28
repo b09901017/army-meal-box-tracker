@@ -299,10 +299,12 @@ App.UI = (function () {
     var card = document.getElementById('box-card');
     if (!card) return;
     var rect = card.getBoundingClientRect();
+    // 頂列高度會隨 safe-area 變動，直接量比寫死可靠
+    var bar = document.querySelector('.topbar');
+    var barH = (bar ? bar.offsetHeight : 60) + 6;
     // 已經整張看得到（而且沒被底部計數列擋住）就不要亂動畫面
-    if (rect.top >= 62 && rect.bottom <= window.innerHeight - 100) return;
-    var top = rect.top + window.scrollY - 66;   // 扣掉頂列高度
-    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    if (rect.top >= barH && rect.bottom <= window.innerHeight - 100) return;
+    window.scrollTo({ top: Math.max(0, rect.top + window.scrollY - barH), behavior: 'smooth' });
   }
 
   function renderWork(lastAddedIndex) {

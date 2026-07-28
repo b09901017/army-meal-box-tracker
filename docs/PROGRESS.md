@@ -73,6 +73,20 @@
 順手修掉的 bug：`boxesSealed` 用 `floor(packed/24)` 算，導致單位打完時最後那個沒裝滿的箱子
 不算數（64 個打完顯示「2/3 箱」）。改成打完時直接等於 `boxesNeeded`。
 
+## 第三輪：沉浸感與品牌
+
+1. **App 更名為「飯飯之輩」** —— 頂列標題、`<title>`、manifest 的 `name` / `short_name`、
+   iOS 的 `apple-mobile-web-app-title` 都一起改。
+2. **沉浸模式** —— manifest 改成 `"display": "fullscreen"`（Android 會真的把狀態列收起來），
+   並加 `display_override` 依序退回 `standalone` / `minimal-ui`。
+   iOS 沒有辦法真的隱藏狀態列，只能用 `apple-mobile-web-app-status-bar-style: black-translucent`
+   讓網頁內容延伸到狀態列底下；因此頂列的 `padding-top` 要加 `env(safe-area-inset-top)`，
+   標題才不會被時間與電量蓋住。`viewport-fit=cover` 是這一切生效的前提（原本就有）。
+3. **頂列改成毛玻璃** —— 在最上面時完全透明融進背景，`scrollY > 4` 時加上 `.is-stuck`：
+   `backdrop-filter: blur(20px) saturate(180%)` + 68% 底色 + 一條細下緣線。
+   左右用負 margin 撐滿 app 寬度，否則模糊會在內距處斷掉。
+   不支援 `backdrop-filter` 的瀏覽器用 `@supports not` 退回實色。
+
 ## 之後可以再做的（目前沒做）
 
 - 多天紀錄與歷史查詢（現在只保留當天）
