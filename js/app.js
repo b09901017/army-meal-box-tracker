@@ -326,6 +326,18 @@
       document.removeEventListener('pointerdown', once);
     }, { once: true });
 
+    // 往下捲時頂列變毛玻璃，在最上面時保持透明
+    var topbar = document.querySelector('.topbar');
+    var stuck = false;
+    function syncTopbar() {
+      var next = window.scrollY > 4;
+      if (next === stuck) return;
+      stuck = next;
+      topbar.classList.toggle('is-stuck', next);
+    }
+    window.addEventListener('scroll', syncTopbar, { passive: true });
+    syncTopbar();
+
     UI.setScreen(S.get().configured && S.dayStats().total > 0 ? 'work' : 'setup');
 
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
