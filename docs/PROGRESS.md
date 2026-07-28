@@ -87,6 +87,21 @@
    左右用負 margin 撐滿 app 寬度，否則模糊會在內距處斷掉。
    不支援 `backdrop-filter` 的瀏覽器用 `@supports not` 退回實色。
 
+## 第四輪：修掉沉浸模式頂端的黑帶
+
+第三輪用 `display: fullscreen` 想把狀態列收起來，實機（Android）狀態列確實不見了，
+但頂端被一條黑色區塊取代 —— 那是系統把瀏海／邊海區 letterbox 掉的結果，
+**在網頁視窗之外，CSS 改不到**。
+
+使用者選擇「畫面填到頂」優先於「狀態列隱藏」，所以：
+
+- manifest 改回 `"display": "standalone"`（拿掉 fullscreen）。
+- `theme-color` 塗成畫面最上緣實際的顏色（`--bg-grain`：淺色 `#EBE5D6` / 深色 `#1E2523`），
+  Android 的狀態列就跟 App 背景連成一片，時間電量像直接浮在背景上。
+- `ui.js` 的 `syncThemeColor()` 在每次 render 時同步，`app.js` 另外監聽
+  `prefers-color-scheme` 變化，主題設「跟隨系統」時也會跟著換。
+- 背景改成畫在 `html` 上（原本只有 `body`），避免安全區那塊沒被塗到。
+
 ## 之後可以再做的（目前沒做）
 
 - 多天紀錄與歷史查詢（現在只保留當天）

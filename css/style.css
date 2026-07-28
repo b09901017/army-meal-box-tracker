@@ -107,6 +107,13 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
+/* 背景要畫在 html 上（不能只靠 body 的背景往上傳遞），
+   否則沉浸模式下狀態列／瀏海那塊區域可能不會被塗到，變成一條黑的。 */
+html {
+  background: var(--bg);
+  min-height: 100%;
+}
+
 /* 元件自己設了 display 會蓋掉 [hidden] 的預設值，這裡統一補回來 */
 [hidden] { display: none !important; }
 
@@ -122,6 +129,7 @@ body {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
+  min-height: 100dvh;
 }
 
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }

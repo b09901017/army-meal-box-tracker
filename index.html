@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>飯飯之輩</title>
 <meta name="description" content="部隊打飯班的便當分箱計數工具：一箱 4 層 × 6 個，自動提醒換層、換箱、換連隊。">
-<meta name="theme-color" content="#3E5641">
+<!-- Android 的狀態列會塗成 theme-color。塗成跟 App 頂端一樣的顏色，
+     時間電量就像直接浮在背景上，視覺上畫面是填滿到最頂端的。
+     實際值由 ui.js 的 syncThemeColor() 依目前主題同步。 -->
+<meta name="theme-color" id="meta-theme" content="#EBE5D6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <!-- black-translucent：iOS 加到主畫面後，網頁內容會延伸到狀態列底下，看起來更沉浸。
      搭配 CSS 的 env(safe-area-inset-top) 才不會被時間跟電量蓋住。 -->

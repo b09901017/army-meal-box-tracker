@@ -316,12 +316,23 @@ App.UI = (function () {
     keepBoxInView();
   }
 
+  /* 讓系統狀態列的顏色跟 App 頂端一致（Android 會用 theme-color 塗狀態列）。
+     值取自 CSS 的 --bg-grain，也就是畫面最上緣實際看到的顏色。 */
+  function syncThemeColor() {
+    var t = S.get().settings.theme;
+    var dark = t === 'dark' ||
+      (t === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var meta = document.getElementById('meta-theme');
+    if (meta) meta.setAttribute('content', dark ? '#1E2523' : '#EBE5D6');
+  }
+
   function render(lastAddedIndex) {
     var st = S.get();
     $('#date-label').textContent = st.dateLabel
       ? st.dateLabel + ' 的便當'
       : (st.configured ? '今日便當' : '還沒設定便當數');
     document.documentElement.setAttribute('data-theme', st.settings.theme);
+    syncThemeColor();
     if (currentScreen === 'setup') renderSetup(); else renderWork(lastAddedIndex);
   }
 
@@ -408,6 +419,7 @@ App.UI = (function () {
     renderSetup: renderSetup, renderWork: renderWork,
     showWarnings: showWarnings,
     toast: toast, overlay: overlay, confirmBox: confirmBox, flashLayer: flashLayer,
+    syncThemeColor: syncThemeColor,
     unitName: unitName, boxPhrase: boxPhrase, esc: esc,
   };
 })();

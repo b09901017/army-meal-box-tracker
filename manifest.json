@@ -4,11 +4,11 @@
   "description": "部隊打飯班的便當分箱計數工具：一箱 4 層 × 6 個，自動提醒換層、換箱、換連隊。",
   "start_url": ".",
   "scope": ".",
-  "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#F3EFE4",
-  "theme_color": "#3E5641",
+  "theme_color": "#EBE5D6",
   "lang": "zh-Hant",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
