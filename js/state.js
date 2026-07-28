@@ -85,6 +85,14 @@ App.State = (function () {
       解析代表「這是今天的完整訊息」，所以先清空舊的需求量，
       沒出現在訊息裡的單位就是今天不用打。已打的進度會保留但夾到新的上限。 */
   function applyEntries(entries, dateLabel) {
+    // 貼上的是別天的訊息 → 昨天的進度要整個歸零，不然會接著昨天的數字繼續打
+    var dateChanged = !!dateLabel && !!state.dateLabel && dateLabel !== state.dateLabel;
+    var clearedCount = 0;
+    if (dateChanged) {
+      clearedCount = dayStats().packed;
+      state.progress = blankPlan();
+    }
+
     if (dateLabel) state.dateLabel = dateLabel;
     state.plan = blankPlan();
     entries.forEach(function (e) {
@@ -101,6 +109,7 @@ App.State = (function () {
     clampProgress();
     ensureActiveUnit();
     emit();
+    return { dateChanged: dateChanged, clearedCount: clearedCount };
   }
 
   /** 需求量變動後，已打數不可以超過需求量 */
