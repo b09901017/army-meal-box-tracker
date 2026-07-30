@@ -316,41 +316,42 @@ App.UI = (function () {
     return Math.max(1, Math.floor(S.get().settings.drinkPerCase) || 24);
   }
 
+  /** 罐數 → 「N 箱又 M 罐」。合計與各連用同一套算法（總罐數 ÷ 每箱罐數）。 */
+  function caseText(cans, per) {
+    var c = Math.floor(cans / per), r = cans % per;
+    if (!c && !r) return '—';
+    return (c ? '<b>' + c + '</b> 箱' : '') +
+           (c && r ? ' 又 ' : '') +
+           (r ? '<b>' + r + '</b> 罐' : '');
+  }
+
+  function drinkRow(name, cans, per, cls) {
+    var showCans = cans >= per;   // 不足一箱時大字本身就是罐數，不用重複一次
+    return '<div class="ov-row ' + cls + '">' +
+      '<span class="ov-name">' + esc(name) + '</span>' +
+      '<span class="drink-amount">' + caseText(cans, per) +
+        (showCans ? '<span class="drink-cans">共 ' + cans + ' 罐</span>' : '') +
+      '</span>' +
+    '</div>';
+  }
+
   function renderDrinks() {
     var st = S.get();
     var per = drinkPerCase();
     var units = S.unitsInMeal(st.activeMeal);
     var meal = S.mealStats(st.activeMeal);
-    var fullCases = 0, loose = 0;
 
     var rows = units.map(function (u) {
-      var cans = S.unitStats(st.activeMeal, u.id).total;
-      var c = Math.floor(cans / per), r = cans % per;
-      fullCases += c; loose += r;
-      return '<div class="ov-row drink-row">' +
-        '<span class="ov-name">' + esc(u.name) + '</span>' +
-        '<span class="drink-amount">' +
-          (c ? '<b>' + c + '</b> 箱' : '') +
-          (c && r ? ' 又 ' : '') +
-          (r ? '<b>' + r + '</b> 罐' : '') +
-          (!c && !r ? '—' : '') +
-          // 不足一箱時大字本身就是罐數了，不用再重複一次
-          (c ? '<span class="drink-cans">' + cans + ' 罐</span>' : '') +
-        '</span>' +
-      '</div>';
+      return drinkRow(u.name, S.unitStats(st.activeMeal, u.id).total, per, 'drink-row');
     }).join('');
 
     $('#drink-rows').innerHTML = units.length
-      ? rows + '<div class="ov-row drink-total">' +
-          '<span class="ov-name">本餐合計</span>' +
-          '<span class="drink-amount">整箱 <b>' + fullCases + '</b> 箱' +
-            (loose ? ' ＋ 零散 <b>' + loose + '</b> 罐' : '') +
-            '<span class="drink-cans">' + meal.total + ' 罐</span></span>' +
-        '</div>'
+      ? rows + drinkRow('本餐合計', meal.total, per, 'drink-total')
       : '<p class="hint">這一餐沒有單位要打便當。</p>';
 
     $('#drinks').querySelector('summary').innerHTML =
-      '<span>🥤 飲料箱數</span><span class="ov-stat">本餐 ' + meal.total + ' 罐 · 每箱 ' + per + '</span>';
+      '<span>🥤 飲料箱數</span><span class="ov-stat">共 ' + meal.total + ' 罐 · ' +
+      caseText(meal.total, per).replace(/<\/?b>/g, '') + '</span>';
 
     // 正在輸入時不要覆蓋游標
     var input = $('#drink-per-case');
