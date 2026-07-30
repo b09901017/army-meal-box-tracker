@@ -109,6 +109,21 @@
       <summary>本餐全連隊進度</summary>
       <div id="overview-table"></div>
     </details>
+
+    <details id="drinks" class="overview drinks">
+      <summary>🥤 飲料箱數</summary>
+      <div class="drinks-body">
+        <div class="drink-config">
+          <label for="drink-per-case">一箱</label>
+          <input type="number" id="drink-per-case" inputmode="numeric" min="1" max="999" value="24">
+          <span>罐</span>
+          <button type="button" class="case-preset" data-case="24">24</button>
+          <button type="button" class="case-preset" data-case="18">18</button>
+        </div>
+        <div id="drink-rows"></div>
+      </div>
+    </details>
+
     <div class="counter-spacer"></div>
   </section>
 

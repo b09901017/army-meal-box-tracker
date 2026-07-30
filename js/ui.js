@@ -218,7 +218,10 @@ App.UI = (function () {
           var veg = S.isVegIndex(abs, s.total, s.veg);
           if (abs < s.packed) {
             cls += veg ? ' is-filled is-veg' : ' is-filled';
-            icon = '<svg aria-hidden="true"><use href="' + (veg ? '#i-leaf' : '#i-bento') + '"/></svg>';
+            // 一定要帶 viewBox：沒有的話 svg 的固有尺寸是 300×150，
+            // Safari 會拿它當 grid item 的最小高度，把整排格子撐長。
+            icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="' +
+              (veg ? '#i-leaf' : '#i-bento') + '"/></svg>';
             if (lastAddedIndex === abs) cls += ' pop';
           } else {
             layerFull = false;
@@ -307,12 +310,63 @@ App.UI = (function () {
     window.scrollTo({ top: Math.max(0, rect.top + window.scrollY - barH), behavior: 'smooth' });
   }
 
+  /* 飲料：一個便當配一罐，所以需求量就是該連該餐的便當數。
+     一箱幾罐可調（預設 24，偶爾 18），每連各自算「幾箱又幾罐」。 */
+  function drinkPerCase() {
+    return Math.max(1, Math.floor(S.get().settings.drinkPerCase) || 24);
+  }
+
+  function renderDrinks() {
+    var st = S.get();
+    var per = drinkPerCase();
+    var units = S.unitsInMeal(st.activeMeal);
+    var meal = S.mealStats(st.activeMeal);
+    var fullCases = 0, loose = 0;
+
+    var rows = units.map(function (u) {
+      var cans = S.unitStats(st.activeMeal, u.id).total;
+      var c = Math.floor(cans / per), r = cans % per;
+      fullCases += c; loose += r;
+      return '<div class="ov-row drink-row">' +
+        '<span class="ov-name">' + esc(u.name) + '</span>' +
+        '<span class="drink-amount">' +
+          (c ? '<b>' + c + '</b> 箱' : '') +
+          (c && r ? ' 又 ' : '') +
+          (r ? '<b>' + r + '</b> 罐' : '') +
+          (!c && !r ? '—' : '') +
+          // 不足一箱時大字本身就是罐數了，不用再重複一次
+          (c ? '<span class="drink-cans">' + cans + ' 罐</span>' : '') +
+        '</span>' +
+      '</div>';
+    }).join('');
+
+    $('#drink-rows').innerHTML = units.length
+      ? rows + '<div class="ov-row drink-total">' +
+          '<span class="ov-name">本餐合計</span>' +
+          '<span class="drink-amount">整箱 <b>' + fullCases + '</b> 箱' +
+            (loose ? ' ＋ 零散 <b>' + loose + '</b> 罐' : '') +
+            '<span class="drink-cans">' + meal.total + ' 罐</span></span>' +
+        '</div>'
+      : '<p class="hint">這一餐沒有單位要打便當。</p>';
+
+    $('#drinks').querySelector('summary').innerHTML =
+      '<span>🥤 飲料箱數</span><span class="ov-stat">本餐 ' + meal.total + ' 罐 · 每箱 ' + per + '</span>';
+
+    // 正在輸入時不要覆蓋游標
+    var input = $('#drink-per-case');
+    if (input && document.activeElement !== input) input.value = per;
+    Array.prototype.forEach.call(document.querySelectorAll('.case-preset'), function (b) {
+      b.classList.toggle('is-on', parseInt(b.dataset.case, 10) === per);
+    });
+  }
+
   function renderWork(lastAddedIndex) {
     renderMealTabs();
     renderHero();
     renderChips();
     renderBox(lastAddedIndex);
     renderOverview();
+    renderDrinks();
     keepBoxInView();
   }
 
@@ -416,7 +470,7 @@ App.UI = (function () {
 
   return {
     render: render, setScreen: setScreen, getScreen: getScreen,
-    renderSetup: renderSetup, renderWork: renderWork,
+    renderSetup: renderSetup, renderWork: renderWork, renderDrinks: renderDrinks,
     showWarnings: showWarnings,
     toast: toast, overlay: overlay, confirmBox: confirmBox, flashLayer: flashLayer,
     syncThemeColor: syncThemeColor,

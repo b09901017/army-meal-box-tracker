@@ -117,6 +117,9 @@ html {
 /* 元件自己設了 display 會蓋掉 [hidden] 的預設值，這裡統一補回來 */
 [hidden] { display: none !important; }
 
+/* iOS 會給 <button> 一組原生外觀與固有尺寸，會干擾我們自己的排版 */
+button { -webkit-appearance: none; appearance: none; }
+
 body {
   background:
     radial-gradient(1200px 600px at 50% -10%, var(--bg-grain), transparent 70%),
@@ -130,6 +133,10 @@ body {
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
   min-height: 100dvh;
+}
+/* clip 不會製造捲動容器，Safari 的 position:sticky 才不會被 overflow:hidden 影響 */
+@supports (overflow: clip) {
+  body { overflow-x: clip; }
 }
 
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -372,6 +379,7 @@ textarea:focus, input:focus, select:focus {
 .unit-chips {
   display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 14px;
   scrollbar-width: none; -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
 }
 .unit-chips::-webkit-scrollbar { display: none; }
 
@@ -441,12 +449,16 @@ textarea:focus, input:focus, select:focus {
 
 .slot {
   aspect-ratio: 1 / 1; border-radius: 9px;
+  /* grid item 的 min-height 預設是 auto（＝內容高度），
+     Safari 會讓它勝過 aspect-ratio，導致放進圖示後整排被撐長。 */
+  min-width: 0; min-height: 0;
   background: var(--slot-empty);
   display: grid; place-items: center; color: var(--text-dim);
   border: none; padding: 0; cursor: pointer;
   transition: background .18s, transform .18s, box-shadow .18s;
 }
-.slot svg { width: 74%; height: 74%; opacity: 0; transform: scale(.4); }
+/* 用 height:auto 讓高度由 viewBox 的比例決定，不要依賴父層算出來的高度 */
+.slot svg { width: 74%; height: auto; opacity: 0; transform: scale(.4); }
 .slot.is-filled {
   background: var(--slot-fill); color: var(--slot-fill-ink);
   box-shadow: inset 0 0 0 1px var(--slot-fill-ring);
@@ -485,6 +497,39 @@ textarea:focus, input:focus, select:focus {
 .ov-bar > i { display: block; height: 100%; border-radius: 99px; background: var(--accent); transition: width .45s cubic-bezier(.22,1,.36,1); }
 .ov-row.is-done .ov-bar > i { background: var(--veg); }
 .ov-row.is-done .ov-name { color: var(--text-dim); }
+
+/* 飲料箱數 */
+.drinks { margin-top: 12px; }
+.drinks-body { padding: 0 16px 14px; }
+.drink-config {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 12px; margin-bottom: 4px;
+  background: var(--surface-2); border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700; color: var(--text-dim);
+}
+.drink-config input {
+  width: 68px; flex: none; text-align: center; font-weight: 800;
+  padding: 7px 6px; background: var(--surface);
+}
+.case-preset {
+  font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+  padding: 6px 12px; min-height: 34px; border-radius: 99px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-dim);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.case-preset.is-on { background: var(--veg); border-color: var(--veg); color: #fff; }
+.drink-row, .drink-total {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+}
+.drink-amount {
+  font-size: 13px; color: var(--text-dim); font-weight: 600; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.drink-amount b { color: var(--text); font-size: 16px; font-weight: 900; }
+.drink-cans { display: block; font-size: 11.5px; opacity: .8; }
+.drink-total { border-top: 1.5px solid var(--border); }
+.drink-total .ov-name { color: var(--veg); }
+.drink-total .drink-amount b { color: var(--veg); }
 
 /* 底部計數列 */
 .counter-spacer { height: 106px; }
@@ -525,7 +570,7 @@ textarea:focus, input:focus, select:focus {
   background: var(--surface); border-radius: 22px 22px 0 0;
   padding: 10px 18px calc(18px + var(--safe-b));
   box-shadow: var(--shadow-lg); animation: slide-up .28s cubic-bezier(.22,1,.36,1) both;
-  max-height: 88vh; overflow-y: auto;
+  max-height: 88vh; max-height: 88dvh; overflow-y: auto;
 }
 .sheet-handle { width: 40px; height: 4px; border-radius: 99px; background: var(--border); margin: 0 auto 12px; }
 .sheet-panel h2 { font-size: 17px; font-weight: 800; margin-bottom: 10px; }
@@ -537,7 +582,8 @@ textarea:focus, input:focus, select:focus {
 }
 .toggle-row select { width: auto; min-width: 150px; padding: 7px 10px; }
 .toggle-row input[type="checkbox"] {
-  appearance: none; width: 50px; height: 30px; border-radius: 99px; background: var(--slot-empty);
+  -webkit-appearance: none; appearance: none;
+  width: 50px; height: 30px; border-radius: 99px; background: var(--slot-empty);
   position: relative; cursor: pointer; transition: background .2s; flex: none; border: none;
 }
 .toggle-row input[type="checkbox"]::after {

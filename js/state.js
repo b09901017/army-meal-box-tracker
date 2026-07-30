@@ -29,7 +29,8 @@ App.State = (function () {
       configured: false,
       activeMeal: 'breakfast',
       activeUnitId: null,
-      settings: { sound: true, haptic: true, theme: 'auto', vegPosition: 'last' },
+      // drinkPerCase：一箱飲料幾罐，通常 24，偶爾 18
+      settings: { sound: true, haptic: true, theme: 'auto', vegPosition: 'last', drinkPerCase: 24 },
       units: App.DefaultUnits.map(function (u, i) {
         return { id: u.id, name: u.name, short: u.short, order: i };
       }),
