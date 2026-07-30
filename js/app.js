@@ -235,6 +235,30 @@
       S.setActiveUnit(b.dataset.unit);
     });
 
+    // 一箱飲料幾罐。邊打邊算，但只重畫飲料那一區（整表重繪會讓游標跳掉）
+    function setPerCase(n, quiet) {
+      n = Math.max(1, Math.min(999, Math.floor(n) || 24));
+      S.get().settings.drinkPerCase = n;
+      S.save();
+      UI.renderDrinks();
+      if (!quiet) UI.toast('一箱改成 ' + n + ' 罐', 1400);
+    }
+
+    $('#drink-per-case').addEventListener('input', function (e) {
+      if (e.target.value === '') return;      // 清空中途不要跳成 24
+      setPerCase(e.target.value, true);
+    });
+    $('#drink-per-case').addEventListener('blur', function (e) {
+      setPerCase(e.target.value, true);
+      e.target.value = S.get().settings.drinkPerCase;
+    });
+    $('#drinks').addEventListener('click', function (e) {
+      var b = e.target.closest('.case-preset');
+      if (!b) return;
+      e.preventDefault();
+      setPerCase(parseInt(b.dataset.case, 10));
+    });
+
     // 點格子直接跳到某個數量（拿錯、漏裝時修正）
     $('#box-card').addEventListener('click', function (e) {
       var b = e.target.closest('[data-slot]');

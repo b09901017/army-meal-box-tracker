@@ -39,7 +39,7 @@ tests/parser.test.js    解析器測試，`node tests/parser.test.js`，零相�
   configured: false,            // 有沒有按過「開始打飯」
   activeMeal: "dinner",         // breakfast | lunch | dinner
   activeUnitId: "zhan",
-  settings: { sound, haptic, theme, vegPosition },
+  settings: { sound, haptic, theme, vegPosition, drinkPerCase },  // drinkPerCase 預設 24
   units:    [ { id, name, short, order } ],
   plan:     { dinner: { zhan: { meat: 63, veg: 1 } } },   // 需求量
   progress: { dinner: { zhan: 40 } },                     // 已裝量
@@ -97,6 +97,9 @@ slot        = packedInBox % 6
   letterbox 成黑色，那塊在網頁視窗之外，CSS 完全改不到，看起來就是頂端多一條黑帶。
   正確做法是 `standalone` + 把 `theme-color` 塗成跟畫面最上緣同色（`--bg-grain`），
   時間電量就像浮在 App 背景上。`ui.js` 的 `syncThemeColor()` 負責跟著主題切換同步。
+- **格子裡的 `<svg>` 一定要帶 `viewBox`。** 沒有的話固有尺寸是 300×150，而 `.slot` 是 grid item、
+  `min-height` 預設 `auto`（＝內容高度），Safari 會讓它勝過 `aspect-ratio`，
+  把整排格子撐長（Chromium 不會，所以只在 iPhone 上看得到）。`.slot` 另外設了 `min-height: 0` 雙重保險。
 - **背景要畫在 `html` 上**，不能只靠 `body` 背景往上傳遞，否則安全區那塊可能不會被塗到。
 - **午餐的標記字有兩個（`中` 和 `午`）**，所以「中午：15」會命中兩次。`parseMealLine()` 對
   同一餐是「相加」而不是覆蓋，「中」那段沒有數字算 0，加起來才會是正確的 15。
@@ -109,7 +112,7 @@ slot        = packedInBox % 6
 ## 驗證
 
 ```bash
-node tests/parser.test.js          # 解析器，14 個案例
+node tests/parser.test.js          # 解析器，18 個案例
 python3 -m http.server 8000        # 手動測 UI
 ```
 

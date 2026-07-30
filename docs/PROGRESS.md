@@ -115,6 +115,28 @@
 
 測試：解析器 18 個案例（新增 4 個午餐寫法），加上換日情境的瀏覽器實測 6 項。
 
+## 第六輪：iPhone 跑版修正與飲料箱數
+
+### iPhone 上格子被撐長
+
+產生的 `<svg>` 沒有 `viewBox`，固有尺寸就是預設的 300×150。`.slot` 是 grid item、
+`min-height` 預設 `auto`（＝內容高度），**Safari 讓它勝過 `aspect-ratio`**，
+所以放進圖示的格子會把整排撐長；空格子沒有 svg 所以不受影響 —— 症狀正好是「點完才跑版」。
+Chromium 是 `aspect-ratio` 勝出，所以桌機測不出來。
+
+修法三層：`<svg>` 補 `viewBox="0 0 24 24"`、`.slot svg` 改 `height: auto`、
+`.slot` 加 `min-height: 0; min-width: 0`。
+
+順手掃掉其他 iOS 風險：`button { -webkit-appearance: none }`（iOS 會給按鈕原生固有尺寸）、
+`overflow-x: clip`（`hidden` 會製造捲動容器，影響 Safari 的 sticky）、
+checkbox 的 `-webkit-appearance`、設定面板 `max-height` 補 `dvh`、chips 加慣性捲動。
+
+### 飲料箱數
+
+作業畫面最下面新增可收合的「🥤 飲料箱數」：一個便當配一罐，所以需求量＝該連該餐的便當數。
+每連顯示「幾箱又幾罐」，底下一列本餐合計。一箱幾罐可調（`settings.drinkPerCase`，預設 24），
+有 24 / 18 快速鍵也能手動輸入；沿用設定畫面那套 quiet 更新，只重畫飲料區避免游標跳掉。
+
 ## 之後可以再做的（目前沒做）
 
 - 多天紀錄與歷史查詢（現在只保留當天）
