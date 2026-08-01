@@ -97,7 +97,9 @@ App.State = (function () {
     if (dateLabel) state.dateLabel = dateLabel;
     state.plan = blankPlan();
     entries.forEach(function (e) {
-      var unit = state.units.find(function (u) { return u.id === e.unitId; });
+      // 先比 id，再比名稱：避免同一個單位因為 id 規則調整而被建成兩筆
+      var unit = state.units.find(function (u) { return u.id === e.unitId; }) ||
+                 state.units.find(function (u) { return u.name === e.name; });
       if (!unit) {
         unit = { id: e.unitId, name: e.name, short: e.name.slice(0, 1), order: state.units.length };
         state.units.push(unit);

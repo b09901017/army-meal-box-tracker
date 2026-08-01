@@ -163,11 +163,16 @@
         UI.toast('解析不到便當數，請手動輸入');
         return;
       }
+      var packedBefore = S.dayStats().packed;
       var applied = S.applyEntries(result.entries, result.dateLabel);
       var warnings = result.warnings.slice();
       if (applied.dateChanged) {
         warnings.unshift('偵測到換日（' + S.get().dateLabel + '），已把先前打好的 ' +
           applied.clearedCount + ' 個便當進度歸零，重新開始。');
+      } else if (!result.dateLabel && packedBefore > 0) {
+        // 訊息沒寫日期就無從判斷換日，不敢亂刪，但要講清楚
+        warnings.unshift('這則訊息沒有寫日期，所以進度沒有自動清空（目前已打 ' + packedBefore +
+          ' 個）。如果這是新的一天，請到設定裡按「全部清空重來」。');
       }
       UI.showWarnings(warnings);
       var day = S.dayStats();

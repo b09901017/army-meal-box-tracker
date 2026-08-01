@@ -25,8 +25,8 @@ App.mealById = function (id) {
 /* 預設單位。order 即打飯順序（照班長訊息的排列） */
 App.DefaultUnits = [
   { id: 'admin', name: '八仙管理員', short: '管' },
-  { id: 'zhan',  name: '戰',        short: '戰' },
-  { id: 'huo',   name: '火',        short: '火' },
+  { id: 'zhan',  name: '戰支連',    short: '戰' },
+  { id: 'huo',   name: '火力連',    short: '火' },
   { id: 'co1',   name: '一連',      short: '一' },
   { id: 'co2',   name: '二連',      short: '二' },
   { id: 'co3',   name: '三連',      short: '三' },
@@ -35,8 +35,8 @@ App.DefaultUnits = [
 /* 別名表：解析班長訊息時用。比對前會先做 normalize（去空白、全形轉半形、ㄧ→一） */
 App.UnitAliases = {
   admin: ['八仙管理員', '管理員', '八仙', '管'],
-  zhan:  ['戰', '戰隊', '戰連', '戰情', '戰情連'],
-  huo:   ['火', '火連', '火隊'],
+  zhan:  ['戰', '戰支', '戰支連', '戰隊', '戰連', '戰情', '戰情連'],
+  huo:   ['火', '火力', '火力連', '火連', '火隊'],
   co1:   ['一連', '1連', '壹連', '一', '第一連'],
   co2:   ['二連', '2連', '貳連', '二', '第二連'],
   co3:   ['三連', '3連', '參連', '叁連', '三', '第三連'],

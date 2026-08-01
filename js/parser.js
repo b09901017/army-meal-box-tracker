@@ -25,14 +25,23 @@ App.Parser = (function () {
       .replace(/\s+/g, '');
   }
 
+  /* 去掉括號註記。「五營（另外用沒貼連隊的保麗龍盒裝）」→「五營」
+     只用在判斷／命名標題，實際抓數字時仍用原字串。 */
+  function stripParens(s) {
+    return s.replace(/\([^)]*\)/g, '').replace(/[【〔][^】〕]*[】〕]/g, '');
+  }
+
   /* 這一行看起來像不像「單位標題」？
-     條件：正規化後非空、不含餐別字、不含數字、長度不超過 10 */
+     條件：去掉括號註記後非空、不含餐別字、不含數字、長度不超過 10 */
   function looksLikeHeader(norm) {
     if (!norm) return false;
     if (MEAL_RE.test(norm)) return false;
     if (/\d/.test(norm)) return false;
     return norm.length <= 10;
   }
+
+  /* 「總數：130+1素」這種整天一個數字的寫法。教召公版用的就是這種。 */
+  var TOTAL_RE = /(?:總數|總計|合計|總共|總人數)\s*:?\s*(.*)$/;
 
   /* 用別名表找出對應的預設單位 id，找不到回傳 null */
   function matchUnitId(norm) {
@@ -119,39 +128,64 @@ App.Parser = (function () {
 
     function flush() {
       if (!current) return;
-      var hasData = Object.keys(current.meals).length > 0;
-      if (hasData) {
-        entries.push(current);
-      } else if (current.isCustom) {
-        // 沒有任何餐點資料的未知標題（例如 "All"）→ 忽略，不吵使用者
+      // 「總數」補進沒有明確寫早／中／晚的餐別（教召公版三餐同一個數字）
+      if (current.total) {
+        App.Meals.forEach(function (m) {
+          if (!current.meals[m.id]) {
+            current.meals[m.id] = { meat: current.total.meat, veg: current.total.veg };
+          }
+        });
       }
+      if (Object.keys(current.meals).length > 0) {
+        entries.push(current);
+      } else if (current.sawNumber) {
+        warnings.push('「' + current.name + '」底下有數字，但找不到「總數」或早／中／晚，已略過。');
+      }
+      // 沒有任何數字的未知標題（例如 "All"）→ 忽略，不吵使用者
       current = null;
+    }
+
+    function startUnit(name) {
+      var id = matchUnitId(name);
+      return {
+        // 自訂單位用名稱當 id，這樣同一個單位在不同天解析會對到同一筆
+        unitId: id || ('u_' + name),
+        name: id ? unitDefaultName(id) : name,
+        isCustom: !id,
+        meals: {},
+        total: null,
+        sawNumber: false,
+      };
     }
 
     for (var i = 0; i < lines.length; i++) {
       var norm = normalize(lines[i]);
       if (!norm) continue;
+      var head = stripParens(norm);
 
-      if (looksLikeHeader(norm)) {
+      if (looksLikeHeader(head)) {
         flush();
-        var id = matchUnitId(norm);
-        current = {
-          unitId: id || ('custom' + (++customSeq)),
-          name: id ? unitDefaultName(id) : norm,
-          isCustom: !id,
-          meals: {},
-        };
+        current = startUnit(head);
         continue;
       }
 
-      if (MEAL_RE.test(norm)) {
+      var isMeal = MEAL_RE.test(norm);
+      var totalMatch = isMeal ? null : norm.match(TOTAL_RE);
+
+      if (isMeal || totalMatch) {
         if (!current) {
           // 出現數字但還沒看到單位名稱 → 建一個暫時單位，讓使用者自己改名
-          current = { unitId: 'custom' + (++customSeq), name: '未命名單位', isCustom: true, meals: {} };
-          warnings.push('有一段餐點數字找不到對應的單位名稱，已放進「未命名單位」，請確認。');
+          current = startUnit('未命名單位' + (++customSeq));
+          warnings.push('有一段餐點數字找不到對應的單位名稱，已放進「' + current.name + '」，請確認。');
         }
-        parseMealLine(norm, current.meals);
+        current.sawNumber = true;
+        if (isMeal) parseMealLine(norm, current.meals);
+        else current.total = parseSegment(totalMatch[1]);
+        continue;
       }
+
+      // 建置／召員／安管之類的細項：記得看過數字，但不採用（只認總數）
+      if (current && /\d/.test(norm)) current.sawNumber = true;
     }
     flush();
 
