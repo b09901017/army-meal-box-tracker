@@ -153,6 +153,132 @@ test('沒看過的單位會被保留成自訂單位', function () {
   assert.ok(x.entries[0].isCustom);
 });
 
+/* ---- 教召公版：沒有早/中/晚，改用「總數」，三餐同一個數字 ---- */
+
+var DRILL = [
+  '各位長官好，伙委這邊現在需要教召用餐人數（含素食），麻煩各位長官幫我回傳一下。',
+  '',
+  '戰',
+  '建置（含訓員、義務役、協訓幹部）：45+1素',
+  '召員：79',
+  '安管：6個',
+  '總數：130+1素',
+  '',
+  '火',
+  '建置（含訓員、義務役、協訓幹部）：42',
+  '召員：48+1素',
+  '總數：90+1素',
+  '',
+  '一',
+  '建置（含訓員、義務役、協訓幹部）：39',
+  '召員：76',
+  '總數：115',
+  '',
+  '二',
+  '建置（含訓員、義務役、協訓幹部）：40',
+  '召員：85+2素',
+  '總數：125+2素',
+  '',
+  '三',
+  '建置（含訓員、義務役、協訓幹部）：40',
+  '召員：90',
+  '總數：130',
+  '',
+  '五營（另外用沒貼連隊的保麗龍盒裝）',
+  '早上：0',
+  '中午：20',
+  '晚上：12',
+].join('\n');
+
+console.log('\n教召公版（總數制）：');
+var d = App.Parser.parse(DRILL);
+
+test('五個連隊 + 五營，共六個單位', function () {
+  assert.strictEqual(d.entries.length, 6,
+    '實際：' + d.entries.map(function (e) { return e.name; }).join(','));
+});
+
+test('單字「戰」對到戰支連，總數套用到三餐', function () {
+  var m = byUnit(d, 'zhan');
+  var want = { meat: 130, veg: 1 };
+  assert.deepStrictEqual(m.breakfast, want);
+  assert.deepStrictEqual(m.lunch, want);
+  assert.deepStrictEqual(m.dinner, want);
+});
+
+test('建置／召員／安管 的細項不會被算進去', function () {
+  // 45+1素、79、6 都不該單獨出現，只認 總數 130+1素
+  var m = byUnit(d, 'zhan');
+  assert.strictEqual(m.lunch.meat + m.lunch.veg, 131);
+});
+
+test('火力連 90+1素 三餐相同', function () {
+  var m = byUnit(d, 'huo');
+  assert.deepStrictEqual(m.dinner, { meat: 90, veg: 1 });
+  assert.deepStrictEqual(m.breakfast, m.dinner);
+});
+
+test('一 / 二 / 三 單字也對得到連隊', function () {
+  assert.deepStrictEqual(byUnit(d, 'co1').lunch, { meat: 115, veg: 0 });
+  assert.deepStrictEqual(byUnit(d, 'co2').lunch, { meat: 125, veg: 2 });
+  assert.deepStrictEqual(byUnit(d, 'co3').lunch, { meat: 130, veg: 0 });
+});
+
+test('「五營（括號註記）」能被認出來，早/中/晚分開算', function () {
+  var e = d.entries.find(function (x) { return x.name === '五營'; });
+  assert.ok(e, '找不到五營');
+  assert.deepStrictEqual(e.meals.breakfast, { meat: 0, veg: 0 });
+  assert.deepStrictEqual(e.meals.lunch, { meat: 20, veg: 0 });
+  assert.deepStrictEqual(e.meals.dinner, { meat: 12, veg: 0 });
+});
+
+test('五營的數字不會被灌進上一個單位（戰）', function () {
+  var m = byUnit(d, 'zhan');
+  assert.notDeepStrictEqual(m.lunch, { meat: 20, veg: 0 });
+});
+
+test('開頭的招呼語不會被當成單位', function () {
+  assert.ok(!d.entries.some(function (e) { return e.name.indexOf('各位長官') === 0; }));
+});
+
+test('自訂單位的 id 由名稱決定（跨天解析會對到同一筆）', function () {
+  var a = App.Parser.parse('五營\n早：3');
+  var b = App.Parser.parse('別的連\n早：5\n五營\n早：3');
+  var ida = a.entries[0].unitId;
+  var idb = b.entries.find(function (e) { return e.name === '五營'; }).unitId;
+  assert.strictEqual(ida, idb);
+  assert.strictEqual(ida, 'u_五營');
+});
+
+test('教召公版總量：1814 個 / 83 箱', function () {
+  var total = 0, boxes = 0;
+  d.entries.forEach(function (e) {
+    ['breakfast', 'lunch', 'dinner'].forEach(function (k) {
+      if (!e.meals[k]) return;
+      var n = e.meals[k].meat + e.meals[k].veg;
+      total += n; boxes += Math.ceil(n / 24);
+    });
+  });
+  assert.strictEqual(total, 1814);
+  assert.strictEqual(boxes, 83);
+});
+
+test('有數字但沒有總數也沒有早中晚 → 給警告不靜默吞掉', function () {
+  var x = App.Parser.parse('戰\n建置：45\n召員：79');
+  assert.strictEqual(x.entries.length, 0);
+  assert.ok(x.warnings.some(function (w) { return w.indexOf('已略過') !== -1; }), x.warnings.join(' / '));
+});
+
+test('總數與早中晚並存時，明確寫的餐別優先', function () {
+  var x = App.Parser.parse('火\n早：0\n總數：50');
+  var m = byUnit(x, 'huo');
+  assert.deepStrictEqual(m.breakfast, { meat: 0, veg: 0 });
+  assert.deepStrictEqual(m.lunch, { meat: 50, veg: 0 });
+  assert.deepStrictEqual(m.dinner, { meat: 50, veg: 0 });
+});
+
+console.log('\n其他：');
+
 test('空訊息會給警告', function () {
   var x = App.Parser.parse('');
   assert.strictEqual(x.entries.length, 0);
