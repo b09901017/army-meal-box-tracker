@@ -43,6 +43,25 @@ App.Parser = (function () {
   /* 「總數：130+1素」這種整天一個數字的寫法。教召公版用的就是這種。 */
   var TOTAL_RE = /(?:總數|總計|合計|總共|總人數)\s*:?\s*(.*)$/;
 
+  /* 整行只有餐別名稱（沒有數字、沒有冒號）→ 這是「餐別區段標題」，
+     底下所有單位都算這一餐。駐地公版用的就是這種寫法。 */
+  var MEAL_SECTION = {
+    '早餐': 'breakfast', '早上': 'breakfast', '早': 'breakfast',
+    '午餐': 'lunch', '中餐': 'lunch', '中午': 'lunch', '下午': 'lunch', '中': 'lunch', '午': 'lunch',
+    '晚餐': 'dinner', '晚上': 'dinner', '晚': 'dinner',
+  };
+
+  /* 把「八仙130+1素」拆成 { lead: '八仙', rest: '130+1素' }。
+     lead 可能是單位名（二營47+1素），也可能是駐地（八仙130+1素）。 */
+  function splitLeadNumber(norm) {
+    var i = norm.search(/\d/);
+    if (i < 0) return null;
+    return {
+      lead: stripParens(norm.slice(0, i)).replace(/[:、,。.]/g, ''),
+      rest: norm.slice(i),
+    };
+  }
+
   /* 用別名表找出對應的預設單位 id，找不到回傳 null */
   function matchUnitId(norm) {
     var aliases = App.UnitAliases;
@@ -158,11 +177,27 @@ App.Parser = (function () {
       };
     }
 
+    function ensureUnit() {
+      if (current) return;
+      current = startUnit('未命名單位' + (++customSeq));
+      warnings.push('有一段餐點數字找不到對應的單位名稱，已放進「' + current.name + '」，請確認。');
+    }
+
+    var sectionMeal = null;   // 目前所在的餐別區段（駐地公版用）
+
     for (var i = 0; i < lines.length; i++) {
       var norm = normalize(lines[i]);
       if (!norm) continue;
       var head = stripParens(norm);
 
+      // 1) 餐別區段標題：整行就是「早餐」「午餐」「晚餐」
+      if (MEAL_SECTION[head]) {
+        flush();
+        sectionMeal = MEAL_SECTION[head];
+        continue;
+      }
+
+      // 2) 單位標題：沒有數字、沒有餐別字
       if (looksLikeHeader(head)) {
         flush();
         current = startUnit(head);
@@ -172,15 +207,28 @@ App.Parser = (function () {
       var isMeal = MEAL_RE.test(norm);
       var totalMatch = isMeal ? null : norm.match(TOTAL_RE);
 
+      // 3) 行內有早/中/晚標記（原本的班長公版），或 4) 總數（教召公版）
       if (isMeal || totalMatch) {
-        if (!current) {
-          // 出現數字但還沒看到單位名稱 → 建一個暫時單位，讓使用者自己改名
-          current = startUnit('未命名單位' + (++customSeq));
-          warnings.push('有一段餐點數字找不到對應的單位名稱，已放進「' + current.name + '」，請確認。');
-        }
+        ensureUnit();
         current.sawNumber = true;
         if (isMeal) parseMealLine(norm, current.meals);
         else current.total = parseSegment(totalMatch[1]);
+        continue;
+      }
+
+      // 5) 餐別區段內的數量行：「駐地 + 數量」或「單位名 + 數量」
+      var split = sectionMeal ? splitLeadNumber(norm) : null;
+      if (split) {
+        var leadId = split.lead && matchUnitId(split.lead);
+        if (leadId) {
+          // 「二營47+1素」單位名與數量同一行
+          flush();
+          current = startUnit(split.lead);
+        }
+        // 否則 lead 是駐地（八仙／污水廠⋯⋯），數量算給上一行那個單位
+        ensureUnit();
+        current.sawNumber = true;
+        current.meals[sectionMeal] = parseSegment(split.rest);
         continue;
       }
 
@@ -188,6 +236,19 @@ App.Parser = (function () {
       if (current && /\d/.test(norm)) current.sawNumber = true;
     }
     flush();
+
+    // 同一個單位在三個餐別區段各出現一次 → 合併成一筆
+    var merged = [];
+    var byId = {};
+    entries.forEach(function (e) {
+      if (byId[e.unitId]) {
+        Object.keys(e.meals).forEach(function (k) { byId[e.unitId].meals[k] = e.meals[k]; });
+      } else {
+        byId[e.unitId] = e;
+        merged.push(e);
+      }
+    });
+    entries = merged;
 
     entries.forEach(function (e) {
       if (e.isCustom) warnings.push('訊息裡出現沒看過的單位「' + e.name + '」，已幫你新增，請確認名稱。');
