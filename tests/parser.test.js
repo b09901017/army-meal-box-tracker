@@ -277,6 +277,98 @@ test('總數與早中晚並存時，明確寫的餐別優先', function () {
   assert.deepStrictEqual(m.dinner, { meat: 50, veg: 0 });
 });
 
+/* ---- 駐地公版：餐別是區段標題，數量前面掛著駐地名稱 ---- */
+
+// 火力連早餐 90+1素、午晚 35；晚餐那行結尾還多一個句號 —— 都照原訊息
+function mealBlock(huo, dot) {
+  return [
+    '戰支連', '八仙130+1素' + (dot ? '。' : ''),
+    '火力連', '污水廠' + huo,
+    '步一連', '公民會館114',
+    '步二連', '大埤頂125+2素',
+    '步三連', '八里國小130',
+    '二營47+1素',
+    '旅通砲78+2素',
+  ];
+}
+
+var GARRISON = ['8/6便當數量', '', '早餐']
+  .concat(mealBlock('90+1素'), ['', '午餐'], mealBlock('35'),
+          ['', '晚餐'], mealBlock('35', true)).join('\n');
+
+console.log('\n駐地公版（餐別區段制）：');
+var g = App.Parser.parse(GARRISON);
+
+test('抓到日期 8/6', function () {
+  assert.strictEqual(g.dateLabel, '8/6');
+});
+
+test('七個單位，三個餐別區段合併成一筆', function () {
+  assert.strictEqual(g.entries.length, 7,
+    '實際：' + g.entries.map(function (e) { return e.name; }).join(','));
+});
+
+test('駐地「八仙」不會被當成單位，數量算給戰支連', function () {
+  var m = byUnit(g, 'zhan');
+  assert.deepStrictEqual(m.breakfast, { meat: 130, veg: 1 });
+  assert.deepStrictEqual(m.lunch, { meat: 130, veg: 1 });
+  assert.deepStrictEqual(m.dinner, { meat: 130, veg: 1 });
+  assert.ok(!g.entries.some(function (e) { return e.unitId === 'admin'; }), '八仙被誤判成八仙管理員');
+});
+
+test('其他駐地（污水廠／公民會館／大埤頂／八里國小）也只當前綴', function () {
+  assert.deepStrictEqual(byUnit(g, 'huo').breakfast, { meat: 90, veg: 1 });
+  assert.deepStrictEqual(byUnit(g, 'co1').lunch, { meat: 114, veg: 0 });
+  assert.deepStrictEqual(byUnit(g, 'co2').dinner, { meat: 125, veg: 2 });
+  assert.deepStrictEqual(byUnit(g, 'co3').breakfast, { meat: 130, veg: 0 });
+});
+
+test('步一/步二/步三連對到一/二/三連', function () {
+  ['co1', 'co2', 'co3'].forEach(function (id) { byUnit(g, id); });
+});
+
+test('單位名與數量同一行（二營47+1素、旅通砲78+2素）', function () {
+  assert.deepStrictEqual(byUnit(g, 'bn2').lunch, { meat: 47, veg: 1 });
+  assert.deepStrictEqual(byUnit(g, 'lutong').dinner, { meat: 78, veg: 2 });
+});
+
+test('同一單位各餐不同數字要分開（火力連 早 90+1素、午晚 35）', function () {
+  var x = App.Parser.parse(['早餐', '火力連', '污水廠90+1素', '午餐', '火力連', '污水廠35'].join('\n'));
+  var m = byUnit(x, 'huo');
+  assert.deepStrictEqual(m.breakfast, { meat: 90, veg: 1 });
+  assert.deepStrictEqual(m.lunch, { meat: 35, veg: 0 });
+});
+
+test('句尾的句號不影響解析', function () {
+  var x = App.Parser.parse(['晚餐', '戰支連', '八仙130+1素。'].join('\n'));
+  assert.deepStrictEqual(byUnit(x, 'zhan').dinner, { meat: 130, veg: 1 });
+});
+
+test('「早餐」這種區段標題不會被當成數量 0', function () {
+  var x = App.Parser.parse(['早餐', '戰支連', '八仙130'].join('\n'));
+  var m = byUnit(x, 'zhan');
+  assert.deepStrictEqual(m.breakfast, { meat: 130, veg: 0 });
+  assert.strictEqual(m.lunch, undefined);
+});
+
+test('駐地公版總量：2051 個 / 95 箱', function () {
+  var total = 0, boxes = 0;
+  g.entries.forEach(function (e) {
+    ['breakfast', 'lunch', 'dinner'].forEach(function (k) {
+      if (!e.meals[k]) return;
+      var n = e.meals[k].meat + e.meals[k].veg;
+      total += n; boxes += Math.ceil(n / 24);
+    });
+  });
+  assert.strictEqual(total, 2051);
+  assert.strictEqual(boxes, 95);
+});
+
+test('沒有餐別區段時，數量行不會被亂認（教召公版的召員不受影響）', function () {
+  var x = App.Parser.parse('戰\n召員：79\n總數：130');
+  assert.deepStrictEqual(byUnit(x, 'zhan').lunch, { meat: 130, veg: 0 });
+});
+
 console.log('\n其他：');
 
 test('空訊息會給警告', function () {
