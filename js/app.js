@@ -302,6 +302,88 @@
     });
   }
 
+  /* ---------- 打飯途中改總數 ---------- */
+
+  function bindTotalSheet() {
+    var sheet = $('#total-sheet');
+    var meatIn = $('#total-meat');
+    var vegIn = $('#total-veg');
+    var target = null;   // { mealId, unitId } — 開啟當下鎖定，避免中途被自動切餐別影響
+
+    function num(el) { return Math.max(0, Math.min(9999, parseInt(el.value, 10) || 0)); }
+
+    function preview() {
+      var s = S.unitStats(target.mealId, target.unitId);
+      var total = num(meatIn) + num(vegIn);
+      var boxes = S.boxesNeeded(total);
+      var warn = s.packed > total
+        ? '<br><span class="total-warn">⚠️ 已打 ' + s.packed + ' 個超過新總數，會一併調成 ' + total + ' 個</span>'
+        : '';
+      $('#total-preview').innerHTML =
+        '總數 <b>' + s.total + '</b> → <b class="total-new">' + total + '</b> 個 · ' + boxes + ' 箱' +
+        '<br>目前已打 ' + s.packed + ' 個' + warn;
+      $('#btn-total-apply').disabled = (total === s.total);
+    }
+
+    function open() {
+      var st = S.get();
+      if (!st.activeUnitId) { UI.toast('這一餐沒有正在打的連隊'); return; }
+      target = { mealId: st.activeMeal, unitId: st.activeUnitId };
+      var p = S.planOf(target.mealId, target.unitId);
+      meatIn.value = p.meat;
+      vegIn.value = p.veg;
+      $('#total-who').textContent =
+        UI.unitName(target.unitId) + ' · ' + App.mealById(target.mealId).label;
+      sheet.hidden = false;
+      preview();
+    }
+    function close() { sheet.hidden = true; target = null; }
+
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('#btn-edit-total')) { FX.unlock(); open(); }
+    });
+
+    sheet.addEventListener('click', function (e) {
+      if (e.target.closest('[data-close-total]')) { close(); return; }
+
+      var step = e.target.closest('[data-step]');
+      if (step) {
+        var input = step.dataset.step === 'meat' ? meatIn : vegIn;
+        input.value = Math.max(0, num(input) + parseInt(step.dataset.delta, 10));
+        preview();
+        FX.buzz(8);
+        return;
+      }
+
+      var cut = e.target.closest('[data-cut]');
+      if (cut) {
+        // 先扣葷食，葷食不夠再扣素食
+        var n = parseInt(cut.dataset.cut, 10);
+        var m = num(meatIn), v = num(vegIn);
+        var fromMeat = Math.min(m, n);
+        meatIn.value = m - fromMeat;
+        vegIn.value = Math.max(0, v - (n - fromMeat));
+        preview();
+        FX.buzz(12);
+      }
+    });
+
+    sheet.addEventListener('input', function (e) {
+      if (e.target === meatIn || e.target === vegIn) preview();
+    });
+
+    $('#btn-total-apply').addEventListener('click', function () {
+      if (!target) return;
+      var t = target;                      // close() 會清掉 target，先留一份
+      var total = num(meatIn) + num(vegIn);
+      S.adjustPlan(t.mealId, t.unitId, num(meatIn), num(vegIn));
+      close();
+      FX.sound.tick();
+      UI.toast(UI.unitName(t.unitId) + ' ' + App.mealById(t.mealId).label +
+        ' 總數改成 ' + total + ' 個', 2400);
+    });
+  }
+
   function bindSettings() {
     var sheet = $('#settings-sheet');
     function open() {
@@ -372,6 +454,7 @@
 
     bindSetup();
     bindWork();
+    bindTotalSheet();
     bindSettings();
 
     document.addEventListener('pointerdown', function once() {
