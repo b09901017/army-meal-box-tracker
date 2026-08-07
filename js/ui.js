@@ -196,6 +196,26 @@ App.UI = (function () {
     }).join('') || '<p class="hint">這一餐沒有單位要打便當。</p>';
   }
 
+  /* 箱子卡片右上角的四行摘要。素食一律跟葷食分開寫（素食是另外打的）。
+     「差幾箱幾個」只在還差超過一箱時才出現，不然會跟上一行重複。 */
+  function boxMeta(s) {
+    var lines = [
+      '第 <b>' + (s.boxIndex + 1) + '</b> / ' + s.boxesNeeded + ' 箱',
+      '本箱 ' + s.packedInBox + ' / ' + s.boxCapacity + ' 個',
+    ];
+    if (s.done) {
+      lines.push('已完成 ✓');
+    } else {
+      var vegTail = s.remainingVeg
+        ? ' <span class="meta-veg">＋' + s.remainingVeg + ' 素</span>' : '';
+      lines.push('還差 <b>' + s.remainingMeat + '</b> 個' + vegTail);
+      if (s.remainingMeat >= App.Const.PER_BOX) {
+        lines.push('差 ' + boxPhrase(s.remainingMeat) + vegTail);
+      }
+    }
+    return lines.join('<br>');
+  }
+
   function renderBox(lastAddedIndex) {
     var st = S.get();
     var card = $('#box-card');
@@ -252,9 +272,7 @@ App.UI = (function () {
         '</div>' +
         '<div class="box-sub">需求 ' + s.total + ' 個' + (s.veg ? '（葷 ' + s.meat + ' + 素 ' + s.veg + '）' : '') + '</div>' +
         '<div class="box-sub">已打 ' + boxPhrase(s.packed) + '</div></div>' +
-        '<div class="box-meta">第 <b>' + (s.boxIndex + 1) + '</b> / ' + s.boxesNeeded + ' 箱' +
-          '<br>本箱 ' + s.packedInBox + ' / ' + s.boxCapacity + ' 個' +
-          '<br>' + (s.done ? '已完成 ✓' : '還差 ' + s.remaining + ' 個') + '</div>' +
+        '<div class="box-meta">' + boxMeta(s) + '</div>' +
       '</div>' +
       '<div class="box-frame' + (boxFull ? ' is-full' : '') + '">' + layers + '</div>' +
       (s.boxCapacity < App.Const.PER_BOX
