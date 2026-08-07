@@ -80,7 +80,10 @@
       </div>
       <p class="hint">🥬 那一格是素食數量，會另外標記提醒。填 0 代表這一餐不用打。</p>
       <div id="plan-table" class="plan-table-wrap"></div>
-      <button id="btn-add-unit" class="btn btn-ghost btn-block" type="button">＋ 新增單位</button>
+      <div class="btn-row">
+        <button id="btn-add-unit" class="btn btn-ghost" type="button">＋ 新增單位</button>
+        <button id="btn-clear-plan" class="btn btn-ghost danger" type="button">🧹 清空所有便當數</button>
+      </div>
     </div>
 
     <div class="card summary-card">
@@ -145,6 +148,7 @@
     <h2>設定</h2>
     <label class="toggle-row"><span>🔊 音效提醒</span><input type="checkbox" id="set-sound"></label>
     <label class="toggle-row"><span>📳 震動提醒</span><input type="checkbox" id="set-haptic"></label>
+    <label class="toggle-row"><span>⏰ 開啟時自動選餐別</span><input type="checkbox" id="set-automeal"></label>
     <div class="toggle-row">
       <span>🎨 外觀</span>
       <select id="set-theme">
