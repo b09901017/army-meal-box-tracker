@@ -247,7 +247,9 @@ App.UI = (function () {
     var boxFull = s.packedInBox >= s.boxCapacity && s.boxCapacity > 0;
     card.innerHTML =
       '<div class="box-head">' +
-        '<div><div class="box-unit">' + esc(unitName(st.activeUnitId)) + (s.done ? ' ✅' : '') + '</div>' +
+        '<div><div class="box-unit">' + esc(unitName(st.activeUnitId)) + (s.done ? ' ✅' : '') +
+          '<button id="btn-edit-total" class="edit-total" type="button" title="調整這一連這一餐的總數">✏️ 改總數</button>' +
+        '</div>' +
         '<div class="box-sub">需求 ' + s.total + ' 個' + (s.veg ? '（葷 ' + s.meat + ' + 素 ' + s.veg + '）' : '') + '</div>' +
         '<div class="box-sub">已打 ' + boxPhrase(s.packed) + '</div></div>' +
         '<div class="box-meta">第 <b>' + (s.boxIndex + 1) + '</b> / ' + s.boxesNeeded + ' 箱' +

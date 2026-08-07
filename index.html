@@ -172,6 +172,42 @@
   </div>
 </div>
 
+<!-- 打飯途中直接改總數（長官臨時拿走便當時用）。兩段式：先開面板、調完再套用，避免誤按 -->
+<div id="total-sheet" class="sheet" hidden>
+  <div class="sheet-backdrop" data-close-total></div>
+  <div class="sheet-panel" role="dialog" aria-label="調整總數">
+    <div class="sheet-handle"></div>
+    <h2>調整總數</h2>
+    <p class="hint" id="total-who"></p>
+
+    <div class="total-row">
+      <span class="total-label">🍱 葷食</span>
+      <button class="step-btn" type="button" data-step="meat" data-delta="-1" aria-label="葷食減一">−</button>
+      <input type="number" id="total-meat" inputmode="numeric" min="0" max="9999" aria-label="葷食數量">
+      <button class="step-btn" type="button" data-step="meat" data-delta="1" aria-label="葷食加一">＋</button>
+    </div>
+    <div class="total-row">
+      <span class="total-label">🥬 素食</span>
+      <button class="step-btn" type="button" data-step="veg" data-delta="-1" aria-label="素食減一">−</button>
+      <input type="number" id="total-veg" inputmode="numeric" min="0" max="9999" aria-label="素食數量">
+      <button class="step-btn" type="button" data-step="veg" data-delta="1" aria-label="素食加一">＋</button>
+    </div>
+
+    <div class="quick-cut">
+      <span>一次扣</span>
+      <button type="button" data-cut="1">−1</button>
+      <button type="button" data-cut="2">−2</button>
+      <button type="button" data-cut="5">−5</button>
+      <button type="button" data-cut="10">−10</button>
+    </div>
+
+    <div id="total-preview" class="total-preview"></div>
+
+    <button id="btn-total-apply" class="btn btn-primary btn-block" type="button">套用</button>
+    <button class="btn btn-ghost btn-block" type="button" data-close-total>取消</button>
+  </div>
+</div>
+
 <div id="overlay-root"></div>
 <div id="toast-root" class="toast-root" aria-live="polite"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>

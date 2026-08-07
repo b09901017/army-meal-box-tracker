@@ -190,6 +190,19 @@ App.State = (function () {
     return true;
   }
 
+  /** 打飯途中直接改某一連某一餐的需求量（長官臨時拿走便當時用）。
+      這是明確的手動操作，所以會把已打數夾到新的總數 —— 跟設定畫面邊打字邊存的
+      setPlan() 不一樣，那邊絕對不能夾。 */
+  function adjustPlan(mealId, unitId, meat, veg) {
+    setPlan(mealId, unitId, meat, veg, true);
+    var total = planOf(mealId, unitId).total;
+    if ((state.progress[mealId][unitId] || 0) > total) {
+      state.progress[mealId][unitId] = total;
+    }
+    ensureActiveUnit();
+    emit();
+  }
+
   /** 把某個單位的便當數與進度全部歸零（單位本身保留） */
   function clearUnitPlan(unitId) {
     App.Meals.forEach(function (m) {
@@ -443,7 +456,7 @@ App.State = (function () {
     applyEntries: applyEntries, setPlan: setPlan, planOf: planOf,
     addUnit: addUnit, renameUnit: renameUnit, removeUnit: removeUnit,
     markConfigured: markConfigured, autoSelectMeal: autoSelectMeal,
-    clearUnitPlan: clearUnitPlan, clearAllPlans: clearAllPlans,
+    clearUnitPlan: clearUnitPlan, clearAllPlans: clearAllPlans, adjustPlan: adjustPlan,
     unitStats: unitStats, mealStats: mealStats, dayStats: dayStats,
     unitsInMeal: unitsInMeal, boxesNeeded: boxesNeeded, isVegIndex: isVegIndex,
     ensureActiveUnit: ensureActiveUnit, setActiveMeal: setActiveMeal, setActiveUnit: setActiveUnit,

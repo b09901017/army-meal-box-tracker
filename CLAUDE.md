@@ -88,9 +88,12 @@ slot        = packedInBox % 6
 
 - **`[hidden]` 會被 `display` 蓋掉。** `.sheet`、`.counter-bar`、`.veg-banner` 都有自己的 `display`，所以 `css/style.css` 開頭有一條 `[hidden] { display: none !important }`。拿掉的話設定面板會隱形但擋住整個畫面的點擊。
 - **CSS animation 會蓋掉一般的 `box-shadow` 宣告。** 「下一格」的呼吸光暈是動畫，所以素食版本必須用獨立的 `@keyframes breathe-veg`，光靠 `.is-veg-pending` 的 `box-shadow` 是沒用的。
-- **`setPlan()` 絕對不能夾 `progress`。** 設定畫面是邊打字邊存的，使用者全選重打時欄位會有
-  一瞬間是空的（`parseInt('') || 0` → 0），夾下去等於把已打進度歸零而且救不回來。
+- **改需求量有兩條路徑，夾不夾 `progress` 剛好相反。**
+  `setPlan()`（設定畫面，邊打字邊存）**絕對不能夾** —— 使用者全選重打時欄位會有一瞬間是空的
+  （`parseInt('') || 0` → 0），夾下去等於把已打進度歸零而且救不回來；
   `unitStats()` 讀取時本來就會 `Math.min(packed, total)`，顯示不會出錯。
+  `adjustPlan()`（打飯畫面的「✏️ 改總數」，明確的一次性操作）**則要夾**，
+  否則長官拿走便當、總數降到已打數以下時，存檔會留著回不去的舊進度。
 - **`markConfigured()` 只在第一次設定時自動挑餐別。** 之前每次都挑「第一個有便當的餐」，
   導致打到一半去改個數字回來就被丟回早餐。
 - **設定畫面的數字輸入不能觸發整表重繪**，否則游標會跳掉。`setPlan(..., quiet=true)` 只存檔不 emit，由 `app.js` 手動更新那一列的小計與總覽。
