@@ -30,7 +30,7 @@ App.State = (function () {
       activeMeal: 'breakfast',
       activeUnitId: null,
       // drinkPerCase：一箱飲料幾罐，通常 24，偶爾 18
-      settings: { sound: true, haptic: true, theme: 'auto', vegPosition: 'last', drinkPerCase: 24 },
+      settings: { sound: true, haptic: true, theme: 'auto', vegPosition: 'last', drinkPerCase: 24, autoMeal: true },
       units: App.DefaultUnits.map(function (u, i) {
         return { id: u.id, name: u.name, short: u.short, order: i };
       }),
@@ -134,8 +134,8 @@ App.State = (function () {
     } else {
       state.plan[mealId][unitId] = { meat: meat, veg: veg };
     }
-    var total = meat + veg;
-    if ((state.progress[mealId][unitId] || 0) > total) state.progress[mealId][unitId] = total;
+    // 不要在這裡夾進度！設定畫面是邊打字邊存的，全選重打時欄位會有一瞬間是空的，
+    // 夾下去等於把已打的進度歸零而且救不回來。unitStats() 讀取時本來就會夾，顯示不會出錯。
     if (quiet) save(); else emit();
   }
 
@@ -165,10 +165,45 @@ App.State = (function () {
   }
 
   function markConfigured() {
+    var firstTime = !state.configured;
     state.configured = true;
-    // 自動跳到第一個還有便當要打的餐別
-    var meal = App.Meals.find(function (m) { return mealStats(m.id).total > 0; });
-    if (meal) state.activeMeal = meal.id;
+    // 只有第一次設定才自動挑餐別。之後回來改便當數再進來，要留在原本那一餐，
+    // 不然打到一半去改個數字回來就被丟回早餐了。
+    if (firstTime && !autoSelectMeal()) {
+      var meal = App.Meals.find(function (m) { return mealStats(m.id).total > 0; });
+      if (meal) state.activeMeal = meal.id;
+    }
+    ensureActiveUnit();
+    emit();
+  }
+
+  /** 依現在時間自動切到該打的餐別。回傳有沒有真的切換。 */
+  function autoSelectMeal(now) {
+    if (!state.settings.autoMeal) return false;
+    var cur = mealStats(state.activeMeal);
+    if (cur.packed > 0 && !cur.done) return false;   // 手上這餐打到一半，不搶走
+    var want = App.suggestMealByTime(now);
+    if (want === state.activeMeal || mealStats(want).total === 0) return false;
+    state.activeMeal = want;
+    state.activeUnitId = null;
+    ensureActiveUnit();
+    return true;
+  }
+
+  /** 把某個單位的便當數與進度全部歸零（單位本身保留） */
+  function clearUnitPlan(unitId) {
+    App.Meals.forEach(function (m) {
+      delete state.plan[m.id][unitId];
+      delete state.progress[m.id][unitId];
+    });
+    ensureActiveUnit();
+    emit();
+  }
+
+  /** 把所有單位的便當數與進度歸零（單位本身保留） */
+  function clearAllPlans() {
+    state.plan = blankPlan();
+    state.progress = blankPlan();
     ensureActiveUnit();
     emit();
   }
@@ -199,6 +234,11 @@ App.State = (function () {
     var boxIndex = done ? Math.max(0, boxesNeeded(p.total) - 1) : Math.floor(packed / PER_BOX);
     var packedInBox = packed - boxIndex * PER_BOX;
     var capacity = Math.min(PER_BOX, p.total - boxIndex * PER_BOX);
+    // 素食排最後 → 還沒打的素食 = min(素食數, 剩餘)；排最前 → = max(0, 素食數 - 已打)
+    var left = Math.max(0, p.total - packed);
+    var remainingVeg = state.settings.vegPosition === 'first'
+      ? Math.max(0, p.veg - packed)
+      : Math.min(p.veg, left);
     return {
       unitId: unitId,
       mealId: mealId,
@@ -207,6 +247,8 @@ App.State = (function () {
       total: p.total,
       packed: packed,
       remaining: Math.max(0, p.total - packed),
+      remainingVeg: remainingVeg,
+      remainingMeat: Math.max(0, p.total - packed) - remainingVeg,
       boxesNeeded: boxesNeeded(p.total),
       // 打完時最後一箱就算沒滿也已經封箱，不能用 floor(packed/24)
       boxesSealed: done ? boxesNeeded(p.total) : Math.floor(packed / PER_BOX),
@@ -229,6 +271,7 @@ App.State = (function () {
 
   function mealStats(mealId) {
     var total = 0, packed = 0, boxes = 0, sealed = 0, meat = 0, veg = 0, doneUnits = 0;
+    var leftVeg = 0, leftMeat = 0;
     var units = unitsInMeal(mealId);
     units.forEach(function (u) {
       var s = unitStats(mealId, u.id);
@@ -238,6 +281,8 @@ App.State = (function () {
       sealed += s.boxesSealed;
       meat += s.meat;
       veg += s.veg;
+      leftVeg += s.remainingVeg;
+      leftMeat += s.remainingMeat;
       if (s.done) doneUnits++;
     });
     return {
@@ -247,6 +292,8 @@ App.State = (function () {
       veg: veg,
       packed: packed,
       remaining: total - packed,
+      remainingVeg: leftVeg,
+      remainingMeat: leftMeat,
       boxes: boxes,
       boxesSealed: sealed,
       unitCount: units.length,
@@ -395,7 +442,8 @@ App.State = (function () {
     setSetting: setSetting,
     applyEntries: applyEntries, setPlan: setPlan, planOf: planOf,
     addUnit: addUnit, renameUnit: renameUnit, removeUnit: removeUnit,
-    markConfigured: markConfigured,
+    markConfigured: markConfigured, autoSelectMeal: autoSelectMeal,
+    clearUnitPlan: clearUnitPlan, clearAllPlans: clearAllPlans,
     unitStats: unitStats, mealStats: mealStats, dayStats: dayStats,
     unitsInMeal: unitsInMeal, boxesNeeded: boxesNeeded, isVegIndex: isVegIndex,
     ensureActiveUnit: ensureActiveUnit, setActiveMeal: setActiveMeal, setActiveUnit: setActiveUnit,

@@ -73,7 +73,8 @@ App.UI = (function () {
             '<div class="unit-block-head">' +
               '<input type="text" value="' + esc(u.name) + '" data-rename="' + u.id + '" aria-label="單位名稱">' +
               '<span class="unit-total">共 ' + dayTotal + ' 個</span>' +
-              '<button class="mini-btn" type="button" data-remove="' + u.id + '" aria-label="刪除 ' + esc(u.name) + '">✕</button>' +
+              '<button class="mini-btn" type="button" data-clear="' + u.id + '" title="把這個單位的便當數歸零" aria-label="清空 ' + esc(u.name) + ' 的便當數">⌫</button>' +
+              '<button class="mini-btn" type="button" data-remove="' + u.id + '" title="刪除這個單位" aria-label="刪除 ' + esc(u.name) + '">✕</button>' +
             '</div>' + rows +
           '</div>';
       }).join('');
@@ -161,7 +162,10 @@ App.UI = (function () {
     var day = S.dayStats();
     hero.innerHTML =
       '<div class="hero-label">' + meal.icon + ' ' + meal.label + (s.done ? ' · 全部完成！' : ' · 還差') + '</div>' +
-      '<div class="hero-num">' + (s.done ? '✓' : s.remaining) + (s.done ? '' : '<small>個</small>') + '</div>' +
+      // 素食另外打，所以大數字只算葷食，素食用綠色小標另外掛
+      '<div class="hero-num">' + (s.done ? '✓' : s.remainingMeat) + (s.done ? '' : '<small>個</small>') +
+        (!s.done && s.remainingVeg ? '<span class="hero-veg">＋' + s.remainingVeg + ' 素</span>' : '') +
+      '</div>' +
       '<div class="hero-bar"><i style="width:' + Math.round(s.ratio * 100) + '%"></i></div>' +
       '<div class="hero-stats">' +
         '<div class="hero-stat"><b>' + s.packed + '<i>/' + s.total + '</i></b><span>便當</span></div>' +
@@ -472,6 +476,7 @@ App.UI = (function () {
   return {
     render: render, setScreen: setScreen, getScreen: getScreen,
     renderSetup: renderSetup, renderWork: renderWork, renderDrinks: renderDrinks,
+    renderSummary: renderSummary,   // app.js 手動改數字時只重畫總覽，不重繪整張表
     showWarnings: showWarnings,
     toast: toast, overlay: overlay, confirmBox: confirmBox, flashLayer: flashLayer,
     syncThemeColor: syncThemeColor,

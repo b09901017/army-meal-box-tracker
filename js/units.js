@@ -22,6 +22,23 @@ App.mealById = function (id) {
   return App.Meals.find(function (m) { return m.id === id; }) || App.Meals[0];
 };
 
+/* 實際打飯的時段（分鐘，從午夜起算）。用來在開啟 App 時自動選餐別。 */
+App.MealWindows = [
+  { id: 'breakfast', from:  4 * 60,      to:  7 * 60 - 1 },   // 04:00–06:59
+  { id: 'lunch',     from:  9 * 60,      to: 12 * 60 - 1 },   // 09:00–11:59
+  { id: 'dinner',    from: 14 * 60 + 30, to: 18 * 60 - 1 },   // 14:30–17:59
+];
+
+/** 現在該打哪一餐？在時段內就是那一餐，不在時段內就挑「下一個」時段。 */
+App.suggestMealByTime = function (now) {
+  var d = now || new Date();
+  var m = d.getHours() * 60 + d.getMinutes();
+  var hit = App.MealWindows.find(function (w) { return m >= w.from && m <= w.to; });
+  if (hit) return hit.id;
+  var next = App.MealWindows.find(function (w) { return w.from > m; });
+  return (next || App.MealWindows[0]).id;   // 晚上 18:00 之後 → 明天早餐
+};
+
 /* 預設單位。order 即打飯順序（照班長訊息的排列） */
 App.DefaultUnits = [
   { id: 'admin', name: '八仙管理員', short: '管' },

@@ -208,11 +208,24 @@
     });
 
     $('#plan-table').addEventListener('click', function (e) {
+      var clearBtn = e.target.closest('[data-clear]');
+      if (clearBtn) {
+        var cid = clearBtn.dataset.clear;
+        UI.confirmBox('清空「' + UI.unitName(cid) + '」的便當數？',
+          '三餐的數量與已打進度都會歸零，單位本身會留著。', '歸零')
+          .then(function (ok) { if (ok) { S.clearUnitPlan(cid); UI.toast('已歸零'); } });
+        return;
+      }
       var btn = e.target.closest('[data-remove]');
       if (!btn) return;
       var id = btn.dataset.remove;
       UI.confirmBox('刪除「' + UI.unitName(id) + '」？', '這個單位的便當數與進度都會一起清掉。', '刪除')
         .then(function (ok) { if (ok) { S.removeUnit(id); UI.toast('已刪除'); } });
+    });
+
+    $('#btn-clear-plan').addEventListener('click', function () {
+      UI.confirmBox('清空所有便當數？', '所有單位三餐的數量與已打進度都會歸零，單位本身會留著。', '全部歸零')
+        .then(function (ok) { if (ok) { S.clearAllPlans(); UI.toast('便當數已全部歸零'); } });
     });
 
     $('#btn-start').addEventListener('click', function () {
@@ -295,6 +308,7 @@
       var st = S.get();
       $('#set-sound').checked = st.settings.sound;
       $('#set-haptic').checked = st.settings.haptic;
+      $('#set-automeal').checked = st.settings.autoMeal;
       $('#set-theme').value = st.settings.theme;
       $('#set-veg').value = st.settings.vegPosition;
       sheet.hidden = false;
@@ -313,6 +327,9 @@
     $('#set-haptic').addEventListener('change', function (e) {
       S.setSetting('haptic', e.target.checked);
       if (e.target.checked) FX.buzz(30);
+    });
+    $('#set-automeal').addEventListener('change', function (e) {
+      S.setSetting('autoMeal', e.target.checked);
     });
     $('#set-theme').addEventListener('change', function (e) { S.setSetting('theme', e.target.value); });
     $('#set-veg').addEventListener('change', function (e) {
@@ -380,7 +397,17 @@
     if (mq.addEventListener) mq.addEventListener('change', onScheme);
     else if (mq.addListener) mq.addListener(onScheme);
 
+    if (S.get().configured) S.autoSelectMeal();
     UI.setScreen(S.get().configured && S.dayStats().total > 0 ? 'work' : 'setup');
+
+    // 從背景回到前景時再判斷一次（PWA 常常整天不關）
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'visible') return;
+      if (UI.getScreen() !== 'work') return;
+      if (S.autoSelectMeal()) {
+        UI.toast('已自動切到' + App.mealById(S.get().activeMeal).label, 2000);
+      }
+    });
 
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       navigator.serviceWorker.register('sw.js').catch(function () { /* 離線功能非必要，失敗就算了 */ });
